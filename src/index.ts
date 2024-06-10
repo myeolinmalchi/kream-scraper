@@ -1,5 +1,8 @@
 import * as cheerio from 'cheerio';
 import puppeteer, { Browser, Page } from 'puppeteer';
+import parsePrice from './utils/parsePrice';
+import { ProductBaseInfo, ProductInfo, ProductInfos } from './types/ProductInfo';
+import { LoginValidationError, LoginFailedError, ProductNotFoundError } from './types/Errors';
 
 class Kream {
   private browser: Browser
@@ -21,13 +24,13 @@ class Kream {
       const isDisabled = await page.$('.login_btn_box a[disabled="disabled"]') !== null;
 
       if(isDisabled) {
-        throw new Error('올바른 이메일/비밀번호를 입력해 주세요.')
+        throw new LoginValidationError();
       }
 
       await page.click('.login_btn_box a');
 
       if(page.url() !== 'https://kream.co.kr') {
-        throw new Error('로그인에 실패하였습니다.')
+        throw new LoginFailedError()
       }
 
       await page.close();
@@ -35,7 +38,46 @@ class Kream {
       return new Kream(browser)
     } catch (err) {
       await browser.close();
-      console.error(err)
+      throw err
+    }
+  }
+
+  private async getProductBaseInfo(productId: string): Promise<ProductBaseInfo> {
+    const url = `https://kream.co.kr/products/${productId}`
+    const basePage = await this.browser.newPage();
+
+    try {
+      await basePage.goto(url)
+      const content = await basePage.content()
+
+      if(content.includes('찾을 수 없는 페이지입니다.')) {
+        throw new ProductNotFoundError()
+      }
+
+      const $ = cheerio.load(content);
+
+      await basePage.close();
+
+      const title = $('#wrap > div.layout__main--without-search.container.detail.lg > div.content > div.column_bind > div:nth-child(2) > div > div.column_top > div.main-title-container > p.title').text();
+      const subtitle = $('#wrap > div.layout__main--without-search.container.detail.lg > div.content > div.column_bind > div:nth-child(2) > div > div.column_top > div.main-title-container > p.sub-title').text();
+      const priceStr = $('#wrap > div.layout__main--without-search.container.detail.lg > div.content > div.column_bind > div:nth-child(2) > div > div.column_top > div.price-container > div.price-text-container > p.text-lookup.price.display_paragraph').text();
+
+      const price = parsePrice(priceStr);
+
+      return {
+        title, 
+        subtitle, 
+        price,
+        images: [], 
+        options: [],
+      };
+    } catch(err) {
+      if(err instanceof ProductNotFoundError) {
+        await basePage.close();
+        throw err
+      }
+
+      await this.browser.close();
       throw err
     }
   }
