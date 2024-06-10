@@ -1,0 +1,28 @@
+{
+  "name": "kream-scraper",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "prepack": "yarn build",
+    "build": "yarn build:tsc",
+    "build:tsc": "yarn tsc"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.14.2",
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "@types/cheerio": "^0.22.35",
+    "@types/puppeteer": "^7.0.4",
+    "cheerio": "^1.0.0-rc.12",
+    "puppeteer": "^22.10.0"
+  }
+}
