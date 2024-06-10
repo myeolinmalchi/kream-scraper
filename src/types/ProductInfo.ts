@@ -1,10 +1,4 @@
-export type ProductOption = string | 'ONESIZE'
-
-export type ProductInfos = {
-  [option in ProductOption]?: ProductInfo;
-}
-
-export type ProductInfo = {
+export type ProductBaseInfo = {
   /** 상품명 */
   title: string | null
 
@@ -17,6 +11,11 @@ export type ProductInfo = {
   /** 상품 이미지 */
   images: string[] | null
 
+  /** 상품 옵션 */
+  options: string[] | null;
+}
+
+export type ProductDetailInfo = {
   /** 체결 거래 */
   trades: Trade[] | null
 
@@ -25,6 +24,12 @@ export type ProductInfo = {
   
   /** 구매 입찰 */
   buyBids: Bid[] | null
+}
+
+type Options = ProductBaseInfo['options'] extends (infer U)[] ? U : never;
+
+export type ProductInfo = ProductBaseInfo & {
+  [O in Options]: ProductDetailInfo;
 }
 
 type Trade = {
