@@ -1,3 +1,4 @@
+/** 상품 기본 정보 */
 export type ProductBaseInfo = {
   /** 상품명 */
   title: string | null
@@ -15,7 +16,11 @@ export type ProductBaseInfo = {
   options: string[] | null;
 }
 
+/** 상품 옵션별 상세 정보 */
 export type ProductDetailInfo = {
+  /** 즉시 거래가 */
+  price: number | null
+
   /** 체결 거래 */
   trades: Trade[] | null
 
@@ -26,10 +31,11 @@ export type ProductDetailInfo = {
   buyBids: Bid[] | null
 }
 
-type Options = ProductBaseInfo['options'] extends (infer U)[] ? U : never;
-
+/** 상품 전체 정보 */
 export type ProductInfo = ProductBaseInfo & {
-  [O in Options]: ProductDetailInfo;
+  details: {
+    [option: string]: ProductDetailInfo
+  }
 }
 
 type Trade = {
