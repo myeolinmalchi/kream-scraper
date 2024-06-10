@@ -1,7 +1,6 @@
 import * as cheerio from 'cheerio';
 import puppeteer, { Browser, Page } from 'puppeteer';
 import parsePrice from '../utils/parsePrice';
-import { ProductInfo, ProductBaseInfo, ProductDetailInfo } from '../types/ProductInfo';
 import { LoginValidationError, LoginFailedError, ProductNotFoundError } from '../errors';
 import { detailPageSelectors } from '../constants/selectors';
 import { ProductType } from '../types/Selectors';
@@ -14,7 +13,7 @@ export class Kream implements IKream {
     this.browser = browser;
   }
 
-  static async login(email: string, password: string): Promise<IKream> {
+  static async login(email: string, password: string) {
     const browser = await puppeteer.launch()
     const page = await browser.newPage()
 
@@ -45,18 +44,28 @@ export class Kream implements IKream {
     }
   }
 
-  async getProductBaseInfo(productId: string, useBasePage: boolean = true): Promise<{ baseInfo: ProductBaseInfo, basePage?: Page }> {
+  async getProductBaseInfo(productId: string, useBasePage: boolean = true) {
     const url = `https://kream.co.kr/products/${productId}`
     const basePage = await this.browser.newPage();
 
+    let content: string = '';
+
+    // TODO: 상품 타입 구분 로직 추가
     const productType: ProductType = 'personal';
 
     try {
       await basePage.goto(url)
-      const content = await basePage.content()
+      content = await basePage.content()
 
       if(content.includes('찾을 수 없는 페이지입니다.')) {
         throw new ProductNotFoundError()
+      }
+
+      const hasOptions = await basePage.$(detailPageSelectors[productType].OPTION_TOGGLE) !== null;
+
+      if(hasOptions) {
+        await basePage.click(detailPageSelectors[productType].OPTION_TOGGLE)
+        content = await basePage.content();
       }
 
       const $ = cheerio.load(content);
@@ -68,25 +77,9 @@ export class Kream implements IKream {
         .map((_, element) => $(element).attr('src'))
         .get()
         .filter(src => src !== undefined) as string[];
-
-      const isSingleOption: boolean = $(detailPageSelectors[productType].OPTIONS).length === 0;
-
-      if(isSingleOption) {
-        if(!useBasePage) {
-          await basePage.close();
-        }
-
-        return {
-          baseInfo: {
-            title, 
-            subtitle, 
-            price, 
-            images, 
-            options: null
-          }, 
-          ...(useBasePage && { basePage })
-        }
-      }
+      const options = hasOptions ? $(detailPageSelectors[productType].OPTION_LIST)
+        .map((_, element) => $(element).text())
+        .get() as string[] : null;
 
       return {
         baseInfo: {
@@ -94,7 +87,7 @@ export class Kream implements IKream {
           subtitle, 
           price, 
           images, 
-          options: []
+          options
         }, 
         ...(useBasePage && { basePage })
       };
@@ -109,11 +102,13 @@ export class Kream implements IKream {
     }
   }
 
-  async getProductDetailInfo(basePage: Page, size: string): Promise<ProductDetailInfo> {
-    return {} as ProductDetailInfo;
+  // TODO: 구현
+  async getProductDetailInfo(basePage: Page, option: string | null) {
+    return {} as any ;
   }
 
-  async getProductInfo(productId: string): Promise<ProductInfo> {
+  // TODO: 구현
+  async getProductInfo(productId: string) {
     const { baseInfo } = await this.getProductBaseInfo(productId)
     return {
       ...baseInfo, 
