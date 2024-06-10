@@ -3,6 +3,7 @@ import { ProductBaseInfo, ProductDetailInfo, ProductInfo } from "../types/Produc
 
 export interface IKream {
   getProductBaseInfo(productId: string, useBasePage: boolean): Promise<{ baseInfo: ProductBaseInfo, basePage?: Page }>;
-  getProductDetailInfo(basePage: Page, size: string): Promise<ProductDetailInfo>;
+  getProductDetailInfo(basePage: Page, option: string): Promise<ProductDetailInfo>;
   getProductInfo(productId: string): Promise<ProductInfo>;
+  close(): Promise<void>;
 }
